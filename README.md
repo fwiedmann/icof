@@ -33,6 +33,16 @@ Go-krazy will overwrite the whole partitions, but I needed this step in order to
 Now you can follow the go-krazy installation guide: https://github.com/gokrazy/gokrazy#installation
 
 ```bash
-gokr-packer -overwrite=/dev/sda -serial_console=disabled github.com/gokrazy/fbstatus github.com/gokrazy/hello github.com/gokrazy/serial-busybox
+gokr-packer -update yes -hostname 192.168.178.47 -serial_console=disabled .
 ```
+
+## Circuit 
+
+The circuit uses a pull down resistor. This will pull down the input signal at the GPIO pin to LOW if the switch is pressed and the power circuit is interrupted. 
+
+- Emergency switch is wired in NC (normally closed).
+- A 10kΩ resistor is used
+- 3,3V power pin is enough
+
+![circuit](./icof_circuit.png)
 
