@@ -8,12 +8,16 @@ require (
 )
 
 require (
-	github.com/gokrazy/fbstatus v0.0.0-20210830204329-916f95297e1b // indirect
-	github.com/gokrazy/firmware v0.0.0-20211202033830-6d47f0b8fe52 // indirect
-	github.com/gokrazy/gokrazy v0.0.0-20211213081744-af5773f40f52 // indirect
-	github.com/gokrazy/hello v0.0.0-20210120204214-e33b5caa1a73 // indirect
-	github.com/gokrazy/kernel v0.0.0-20211209035828-74147b2f17a4 // indirect
+	github.com/go-playground/locales v0.14.0 // indirect
+	github.com/go-playground/universal-translator v0.18.0 // indirect
+	github.com/go-playground/validator/v10 v10.10.0 // indirect
+	github.com/gokrazy/firmware v0.0.0-20211223033933-c3666ded69d9 // indirect
+	github.com/gokrazy/gokrazy v0.0.0-20211227082512-604d56adb41c // indirect
+	github.com/gokrazy/kernel v0.0.0-20211223040203-8fd17980422e // indirect
 	github.com/gokrazy/rpi-eeprom v0.0.0-20211214033622-94ca5b456cf2 // indirect
-	github.com/gokrazy/serial-busybox v0.0.0-20211029180129-24c7ca0a91ab // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
+	github.com/leodido/go-urn v1.2.1 // indirect
+	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
+	golang.org/x/sys v0.0.0-20210820121016-41cdb8703e55 // indirect
+	golang.org/x/text v0.3.6 // indirect
 )

@@ -27,8 +27,7 @@ Well, I am an engineer. I can automate this in combination with a big red button
 # gocrazy installation
 
 First you need to plug-in the Pi SD card into your PC. If you have already installed an OS like raspbian on this SD card, I recommend flashing it.
-With the `fdisk` utility you can delete all existing partitions and create a new one for the whole capacity.
-Go-krazy will overwrite the whole partitions, but I needed this step in order to install go-krazy.
+With the `fdisk` utility you can delete all existing partitions.
 
 Now you can follow the go-krazy installation guide: https://github.com/gokrazy/gokrazy#installation
 
