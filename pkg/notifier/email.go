@@ -3,7 +3,7 @@ package notifier
 import (
 	"context"
 	"github.com/go-playground/validator/v10"
-	"net/smtp"
+	"gopkg.in/gomail.v2"
 )
 
 // Message struct will be used to configure the send operation
@@ -12,12 +12,17 @@ type Message struct {
 	Receivers []string `validate:"required,gt=0,dive,required"`
 }
 
+// EmailSender interface
+type EmailSender interface {
+	DialAndSend(message ...*gomail.Message) error
+}
+
 // EmailClientConfig struct holds all required parameters for the EmailClient
 type EmailClientConfig struct {
-	Username         string `validate:"required"`
-	Password         string `validate:"required"`
-	SmtpHost         string `validate:"required"`
-	FromEmailAddress string `validate:"required"`
+	Sender           EmailSender `validate:"required"`
+	FromEmailAddress string      `validate:"required"`
+	AlertSubject     string      `validate:"required"`
+	ResolveSubject   string      `validate:"required"`
 }
 
 // NewEmailClient inits an EmailClient which can send e-mails for alert and resolve notifications
@@ -28,23 +33,19 @@ func NewEmailClient(config EmailClientConfig) (*EmailClient, error) {
 	}
 
 	return &EmailClient{
-		auth:             smtp.PlainAuth("", config.Username, config.Password, config.SmtpHost),
-		smtpHost:         config.SmtpHost,
-		fromEmailAddress: config.FromEmailAddress,
+		config: config,
 	}, nil
 }
 
 // EmailClient struct implements the Notifier interface and can send alert and resolve notifications
 type EmailClient struct {
-	auth             smtp.Auth
-	smtpHost         string
-	fromEmailAddress string
+	config EmailClientConfig
 }
 
 // Alert sends notification to the given receiver audience.
 // Email Subject will contain the noun "alert" as prefix.
 func (e *EmailClient) Alert(ctx context.Context, msg Message) error {
-	if err := e.sendEmail(ctx, msg); err != nil {
+	if err := e.sendEmailToReceivers(ctx, e.config.AlertSubject, msg); err != nil {
 		return AlertError{
 			err:      err,
 			notifier: EmailNotifier,
@@ -56,7 +57,7 @@ func (e *EmailClient) Alert(ctx context.Context, msg Message) error {
 // Resolve sends notification to the given receiver audience.
 // Email Subject will contain the adjective "resolved" as prefix.
 func (e *EmailClient) Resolve(ctx context.Context, msg Message) error {
-	if err := e.sendEmail(ctx, msg); err != nil {
+	if err := e.sendEmailToReceivers(ctx, e.config.ResolveSubject, msg); err != nil {
 		return ResolveError{
 			err:      err,
 			notifier: EmailNotifier,
@@ -65,7 +66,7 @@ func (e *EmailClient) Resolve(ctx context.Context, msg Message) error {
 	return nil
 }
 
-func (e *EmailClient) sendEmail(ctx context.Context, msg Message) error {
+func (e *EmailClient) sendEmailToReceivers(ctx context.Context, subject string, msg Message) error {
 	err := validator.New().Struct(msg)
 	if err != nil {
 		return err
@@ -75,8 +76,7 @@ func (e *EmailClient) sendEmail(ctx context.Context, msg Message) error {
 	defer close(sendError)
 
 	go func(errChan chan<- error) {
-		// Todo: Implement EmailMessage struct to be RFC 822-style complaint or with https://github.com/go-gomail/gomail
-		errChan <- smtp.SendMail(e.smtpHost, e.auth, e.fromEmailAddress, msg.Receivers, []byte(msg.Content))
+		errChan <- e.config.Sender.DialAndSend(e.buildMessages(subject, msg)...)
 	}(sendError)
 
 	select {
@@ -87,9 +87,15 @@ func (e *EmailClient) sendEmail(ctx context.Context, msg Message) error {
 	}
 }
 
-type EmailMessage struct {
-	subject string
-	to      string
-	from    string
-	message string
+func (e *EmailClient) buildMessages(subject string, msg Message) []*gomail.Message {
+	messages := make([]*gomail.Message, 0, len(msg.Receivers))
+	for _, r := range msg.Receivers {
+		gm := gomail.NewMessage()
+		gm.SetHeader("From", e.config.FromEmailAddress)
+		gm.SetHeader("To", r)
+		gm.SetHeader("Subject", subject)
+		gm.SetBody("text/plain", msg.Content)
+		messages = append(messages, gm)
+	}
+	return messages
 }
