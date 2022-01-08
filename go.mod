@@ -15,11 +15,16 @@ require (
 	github.com/gokrazy/gokrazy v0.0.0-20211227082512-604d56adb41c // indirect
 	github.com/gokrazy/kernel v0.0.0-20211223040203-8fd17980422e // indirect
 	github.com/gokrazy/rpi-eeprom v0.0.0-20211214033622-94ca5b456cf2 // indirect
+	github.com/golang/mock v1.6.0 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
+	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/sys v0.0.0-20210820121016-41cdb8703e55 // indirect
 	golang.org/x/text v0.3.6 // indirect
+	golang.org/x/tools v0.1.1 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df // indirect
 )

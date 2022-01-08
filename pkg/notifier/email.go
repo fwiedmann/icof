@@ -26,7 +26,7 @@ type EmailClientConfig struct {
 }
 
 // NewEmailClient inits an EmailClient which can send e-mails for alert and resolve notifications
-func NewEmailClient(config EmailClientConfig) (*EmailClient, error) {
+func NewEmailClient(config *EmailClientConfig) (*EmailClient, error) {
 	err := validator.New().Struct(config)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func NewEmailClient(config EmailClientConfig) (*EmailClient, error) {
 
 // EmailClient struct implements the Notifier interface and can send alert and resolve notifications
 type EmailClient struct {
-	config EmailClientConfig
+	config *EmailClientConfig
 }
 
 // Alert sends notification to the given receiver audience.
@@ -79,11 +79,13 @@ func (e *EmailClient) sendEmailToReceivers(ctx context.Context, subject string, 
 		errChan <- e.config.Sender.DialAndSend(e.buildMessages(subject, msg)...)
 	}(sendError)
 
-	select {
-	case err := <-sendError:
-		return err
-	case <-ctx.Done():
-		return nil
+	for {
+		select {
+		case err := <-sendError:
+			return err
+		case <-ctx.Done():
+			return nil
+		}
 	}
 }
 
