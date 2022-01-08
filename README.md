@@ -45,3 +45,16 @@ The circuit uses a pull down resistor. This will pull down the input signal at t
 
 ![circuit](./icof_circuit.png)
 
+
+## Development
+
+### Mocking
+
+E.g. Notifiers often depends on external dependencies like `pkg/notifier/email` which uses the `gomailer` package. To decouple the dependeny to this package an interface was created which matches the signautres of the methods from `gomailer`. The interface also uses the same data strucures for paramters and response types, but can be implemented by any other implementation. This comes handy for unit testint. With the `golang/mock` you can create mock implementation of interfaces in seconds.
+
+
+To create new mocks please install [golang/mock](https://github.com/golang/mock) and run the following command to create a mocks for the interfaces in the given file. Note that the mocks will be created in a subdir called `mock`.
+
+```bash
+mockgen -source=email.go -destination=mock/email.go
+```
