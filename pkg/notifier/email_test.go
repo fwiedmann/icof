@@ -14,13 +14,8 @@ func TestEmailClient_Alert(t *testing.T) {
 		config notifier.EmailClientConfig
 	}
 
-	type input struct {
-		message notifier.Message
-	}
-
 	tests := []struct {
 		name                 string
-		input                input
 		inputClient          inputClient
 		wantError            bool
 		mockError            error
@@ -28,17 +23,25 @@ func TestEmailClient_Alert(t *testing.T) {
 	}{
 		{
 			name: "should_send_email_to_all_receivers",
-			input: input{
-				message: notifier.Message{
-					Content:   "ALARM!!!",
-					Receivers: []string{"receiver@example.com"},
-				},
-			},
 			inputClient: inputClient{
 				config: notifier.EmailClientConfig{
 					FromEmailAddress: "example@example.com",
 					AlertSubject:     "Alert!",
 					ResolveSubject:   "Resolved!",
+					Receivers: []notifier.Receiver{
+						{
+							Name:                   "colleagues",
+							AlertTemplateMessage:   "Alert occurred, I'm AFK",
+							ResolveTemplateMessage: "Back in buiss",
+							Addresses: []notifier.Address{
+								{
+									Email:   "example@example.com",
+									Name:    "Andi",
+									Surname: "Developer",
+								},
+							},
+						},
+					},
 				},
 			},
 			wantError:            false,
@@ -47,17 +50,25 @@ func TestEmailClient_Alert(t *testing.T) {
 		},
 		{
 			name: "should_return_alert_error",
-			input: input{
-				message: notifier.Message{
-					Content:   "ALARM!!!",
-					Receivers: []string{"receiver@example.com"},
-				},
-			},
 			inputClient: inputClient{
 				config: notifier.EmailClientConfig{
 					FromEmailAddress: "example@example.com",
 					AlertSubject:     "Alert!",
 					ResolveSubject:   "Resolved!",
+					Receivers: []notifier.Receiver{
+						{
+							Name:                   "colleagues",
+							AlertTemplateMessage:   "Alert occurred, I'm AFK",
+							ResolveTemplateMessage: "Back in buiss",
+							Addresses: []notifier.Address{
+								{
+									Email:   "example@example.com",
+									Name:    "Andi",
+									Surname: "Developer",
+								},
+							},
+						},
+					},
 				},
 			},
 			wantError:            true,
@@ -70,11 +81,11 @@ func TestEmailClient_Alert(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.inputClient.config.Sender = mock_email.NewMockEmailSender(t, tt.mockWantMessageCount, tt.mockError)
 			c, err := notifier.NewEmailClient(&tt.inputClient.config)
-			if (err != nil) && !tt.wantError {
+			if err != nil {
 				t.Fatalf("NewEmailClient() retuned an error but did not want one: %s", err)
 			}
 
-			err = c.Alert(context.Background(), tt.input.message)
+			err = c.Alert(context.Background())
 			if (err != nil) && !tt.wantError {
 				t.Fatalf("Alert() retuned an error but did not want one: %s", err)
 			}
@@ -92,13 +103,8 @@ func TestEmailClient_Resolve(t *testing.T) {
 		config notifier.EmailClientConfig
 	}
 
-	type input struct {
-		message notifier.Message
-	}
-
 	tests := []struct {
 		name                 string
-		input                input
 		inputClient          inputClient
 		wantError            bool
 		mockError            error
@@ -106,17 +112,25 @@ func TestEmailClient_Resolve(t *testing.T) {
 	}{
 		{
 			name: "should_send_email_to_all_receivers",
-			input: input{
-				message: notifier.Message{
-					Content:   "Resolve",
-					Receivers: []string{"receiver@example.com"},
-				},
-			},
 			inputClient: inputClient{
 				config: notifier.EmailClientConfig{
 					FromEmailAddress: "example@example.com",
 					AlertSubject:     "Alert!",
 					ResolveSubject:   "Resolved!",
+					Receivers: []notifier.Receiver{
+						{
+							Name:                   "colleagues",
+							AlertTemplateMessage:   "Alert occurred, I'm AFK",
+							ResolveTemplateMessage: "Back in buiss",
+							Addresses: []notifier.Address{
+								{
+									Email:   "example@example.com",
+									Name:    "Andi",
+									Surname: "Developer",
+								},
+							},
+						},
+					},
 				},
 			},
 			mockWantMessageCount: 1,
@@ -124,17 +138,25 @@ func TestEmailClient_Resolve(t *testing.T) {
 		},
 		{
 			name: "should_return_alert_error",
-			input: input{
-				message: notifier.Message{
-					Content:   "ALARM!!!",
-					Receivers: []string{"receiver@example.com"},
-				},
-			},
 			inputClient: inputClient{
 				config: notifier.EmailClientConfig{
 					FromEmailAddress: "example@example.com",
 					AlertSubject:     "Alert!",
 					ResolveSubject:   "Resolved!",
+					Receivers: []notifier.Receiver{
+						{
+							Name:                   "colleagues",
+							AlertTemplateMessage:   "Alert occurred, I'm AFK",
+							ResolveTemplateMessage: "Back in buiss",
+							Addresses: []notifier.Address{
+								{
+									Email:   "example@example.com",
+									Name:    "Andi",
+									Surname: "Developer",
+								},
+							},
+						},
+					},
 				},
 			},
 			wantError:            true,
@@ -151,7 +173,7 @@ func TestEmailClient_Resolve(t *testing.T) {
 				t.Fatalf("NewEmailClient() retuned an error but did not want one: %s", err)
 			}
 
-			err = c.Resolve(context.Background(), tt.input.message)
+			err = c.Resolve(context.Background())
 			if (err != nil) && !tt.wantError {
 				t.Fatalf("Alert() retuned an error but did not want one: %s", err)
 			}
