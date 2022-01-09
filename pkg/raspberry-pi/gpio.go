@@ -3,6 +3,7 @@ package raspberry_pi
 import (
 	"context"
 	"fmt"
+	"github.com/fwiedmann/icof"
 	"time"
 
 	"periph.io/x/conn/v3/gpio/gpioreg"
@@ -51,7 +52,7 @@ type GpioPinAlert struct {
 // Observe continuously checks the current state of the GPIO pin (high or low).
 // An alert will be sent if the threshold of required alerts is met. An alert is defined as the opposite of the PinAlertConfig.PinDefaultState.
 // Once the pin state equals again with PinAlertConfig.PinDefaultState, a resolved alert will be sent and the GpioPinAlert struct state will be set to its default values.
-func (gp *GpioPinAlert) Observe(ctx context.Context, alertChan chan<- bool) {
+func (gp *GpioPinAlert) Observe(ctx context.Context, alertChan chan<- icof.ObserverState) {
 	for err := ctx.Err(); err == nil; {
 		pinState := gp.pin.Read()
 
@@ -62,14 +63,14 @@ func (gp *GpioPinAlert) Observe(ctx context.Context, alertChan chan<- bool) {
 		// resolve alert when pin in his its default state again after the last read was an alert.
 		// reset alertCount and previousReadWasAnAlert
 		if bool(pinState) == gp.config.PinDefaultState && gp.previousReadWasAnAlert {
-			alertChan <- false
+			alertChan <- icof.Resolved
 			gp.previousReadWasAnAlert = false
 			gp.alertCount = 0
 		}
 
 		// send alert if the threshold of required alerts is
 		if (gp.alertCount >= gp.config.RequiredAlertsBeforeNotification) && !gp.previousReadWasAnAlert {
-			alertChan <- true
+			alertChan <- icof.Alert
 			gp.previousReadWasAnAlert = true
 		}
 
