@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/fwiedmann/icof"
 	pi "github.com/fwiedmann/icof/pkg/raspberry-pi"
 	"time"
@@ -19,9 +20,9 @@ func main() {
 		panic(err)
 	}
 
-	icof.Run(icof.Config{
+	panic(icof.Run(context.Background(), icof.Config{
 		Observer:   pinAlert,
 		Notifiers:  []icof.Notifier{},
 		Repository: nil,
-	})
+	}))
 }

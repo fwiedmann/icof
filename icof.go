@@ -32,21 +32,53 @@ type Config struct {
 	Repository StateRepository
 }
 
-func Run(c Config) {
-	alertChan := make(chan ObserverState)
+func Run(ctx context.Context, c Config) error {
+	lastState, err := c.Repository.GetLatest(ctx)
+	if err != nil {
+		panic(err)
+	}
 
-	// TODO diff last stored state with current observer state. If they diff, send alert or resolve message (this will be needed when icof was shutdown)
-	go c.Observer.Observe(context.Background(), alertChan)
+	alertChan := make(chan ObserverState)
+	go c.Observer.Observe(ctx, alertChan)
 	for {
 		select {
+		case <-ctx.Done():
+			return nil
 		case observedSate := <-alertChan:
-			for _, notifier := range c.Notifiers {
-				if observedSate == Alert {
-					notifier.Alert(context.Background())
-					continue
-				}
-				notifier.Resolve(context.Background())
+			if !shouldSendNotification(observedSate, lastState) {
+				break
+			}
+			// reset after the first resolved alert is sent
+			// so that the further alerts will be sent
+			lastState = false
+			if err := c.Repository.Save(ctx, observedSate); err != nil {
+				return err
+			}
+
+			if err := handleAlert(ctx, c, observedSate); err != nil {
+				return err
 			}
 		}
 	}
+}
+
+// when the last stored state was an alert, the observer should not send any new messages
+// because the notifier was already triggered
+func shouldSendNotification(incomingState ObserverState, stateFromRepo ObserverState) bool {
+	return !(incomingState == Alert && stateFromRepo == Alert)
+}
+
+func handleAlert(ctx context.Context, c Config, alert ObserverState) error {
+	for _, notifier := range c.Notifiers {
+		if alert == Alert {
+			if err := notifier.Alert(ctx); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := notifier.Resolve(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
