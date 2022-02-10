@@ -32,6 +32,8 @@ type Config struct {
 	Repository StateRepository
 }
 
+// Run will handle all incoming alerts.
+// It also considers to not send an alert if the last stored state was an alert and the current received state is an alert.
 func Run(ctx context.Context, c Config) error {
 	lastState, err := c.Repository.GetLatest(ctx)
 	if err != nil {
