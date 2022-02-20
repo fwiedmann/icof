@@ -16,14 +16,14 @@ const (
 	resolve
 )
 
-// Receiver struct
-type Receiver struct {
+// EmailReceiver struct
+type EmailReceiver struct {
 	Name                   string    `validate:"required"`
+	AlertSubject           string    `validate:"required"`
+	ResolveSubject         string    `validate:"required"`
 	AlertTemplateMessage   string    `validate:"required"`
 	ResolveTemplateMessage string    `validate:"required"`
 	Addresses              []Address `validate:"required,dive,required"`
-	parsedAlertTemplate    *template.Template
-	parsedResolveTemplate  *template.Template
 }
 
 // Address struct will be used to send the notification to the given Address.Email and also as the input for the message template
@@ -42,47 +42,35 @@ type EmailSender interface {
 type EmailClientConfig struct {
 	Sender           EmailSender `validate:"required"`
 	FromEmailAddress string      `validate:"required"`
-	AlertSubject     string      `validate:"required"`
-	ResolveSubject   string      `validate:"required"`
-	Receivers        []Receiver  `validate:"required,dive,required"`
 }
 
 // NewEmailClient inits an EmailClient which can send e-mails for alert and resolve notifications
-func NewEmailClient(config *EmailClientConfig) (*EmailClient, error) {
+func NewEmailClient(config *EmailClientConfig, repo EmailReceiverRepository) (*EmailClient, error) {
 	err := validator.New().Struct(config)
 	if err != nil {
 		return nil, err
 	}
 
-	for i, receiver := range config.Receivers {
-		tmpl, err := template.New("alert-template").Parse(receiver.AlertTemplateMessage)
-		if err != nil {
-			return nil, err
-		}
-		config.Receivers[i].parsedAlertTemplate = tmpl
-
-		tmpl, err = template.New("resolve-template").Parse(receiver.ResolveTemplateMessage)
-		if err != nil {
-			return nil, err
-		}
-		config.Receivers[i].parsedResolveTemplate = tmpl
-	}
-
 	return &EmailClient{
 		config: config,
+		repo:   repo,
 	}, nil
+}
 
+type EmailReceiverRepository interface {
+	GetEmailReceivers(ctx context.Context) ([]EmailReceiver, error)
 }
 
 // EmailClient struct implements the Notifier interface and can send alert and resolve notifications
 type EmailClient struct {
 	config *EmailClientConfig
+	repo   EmailReceiverRepository
 }
 
 // Alert sends notification to the given receiver audience.
 // Email Subject will contain the noun "alert" as prefix.
 func (e *EmailClient) Alert(ctx context.Context) error {
-	if err := e.sendEmailToReceivers(ctx, e.config.AlertSubject, alert); err != nil {
+	if err := e.sendEmailToReceivers(ctx, alert); err != nil {
 		return AlertError{
 			err:      err,
 			notifier: EmailNotifier,
@@ -94,7 +82,7 @@ func (e *EmailClient) Alert(ctx context.Context) error {
 // Resolve sends notification to the given receiver audience.
 // Email Subject will contain the adjective "resolved" as prefix.
 func (e *EmailClient) Resolve(ctx context.Context) error {
-	if err := e.sendEmailToReceivers(ctx, e.config.ResolveSubject, resolve); err != nil {
+	if err := e.sendEmailToReceivers(ctx, resolve); err != nil {
 		return ResolveError{
 			err:      err,
 			notifier: EmailNotifier,
@@ -103,11 +91,11 @@ func (e *EmailClient) Resolve(ctx context.Context) error {
 	return nil
 }
 
-func (e *EmailClient) sendEmailToReceivers(ctx context.Context, subject string, kind notifierKind) error {
+func (e *EmailClient) sendEmailToReceivers(ctx context.Context, kind notifierKind) error {
 	sendError := make(chan error)
 	defer close(sendError)
 
-	messages, messageBuildErr := e.buildMessages(subject, kind)
+	messages, messageBuildErr := e.buildMessages(kind)
 	// if no messages could be created, no email should be sent
 	if messageBuildErr != nil && len(messages) == 0 {
 		return messageBuildErr
@@ -141,33 +129,45 @@ type failedMessageBuild struct {
 	errorMessage string
 }
 
-func (e *EmailClient) buildMessages(subject string, kind notifierKind) ([]*gomail.Message, error) {
+func (e *EmailClient) buildMessages(kind notifierKind) ([]*gomail.Message, error) {
 	messages := make([]*gomail.Message, 0)
 	failedAddressTemplates := make([]failedMessageBuild, 0)
 
-	for _, receiver := range e.config.Receivers {
+	receivers, err := e.repo.GetEmailReceivers(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	for _, receiver := range receivers {
+		var tmpl *template.Template
+		var subject string
+		switch kind {
+		case alert:
+			subject = receiver.AlertSubject
+			tmpl, err = template.New("alert-template").Parse(receiver.AlertTemplateMessage)
+			if err != nil {
+				return nil, err
+			}
+		case resolve:
+			subject = receiver.ResolveSubject
+			tmpl, err = template.New("alert-template").Parse(receiver.ResolveTemplateMessage)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, fmt.Errorf("could not create messages for notifier kind %d", kind)
+		}
+
 		for _, address := range receiver.Addresses {
 			buf := &strings.Builder{}
-
-			templateFunc := func(tmpl *template.Template) {
-				err := tmpl.Execute(buf, address)
-				if err != nil || buf.Len() == 0 {
-					failedAddressTemplates = append(failedAddressTemplates, failedMessageBuild{
-						address:      address.Email,
-						receiverName: receiver.Name,
-						templateName: tmpl.Name(),
-					})
-				}
+			err := tmpl.Execute(buf, address)
+			if err != nil || buf.Len() == 0 {
+				failedAddressTemplates = append(failedAddressTemplates, failedMessageBuild{
+					address:      address.Email,
+					receiverName: receiver.Name,
+					templateName: tmpl.Name(),
+				})
 			}
-
-			if kind == alert {
-				templateFunc(receiver.parsedAlertTemplate)
-			}
-
-			if kind == resolve {
-				templateFunc(receiver.parsedAlertTemplate)
-			}
-
 			gm := gomail.NewMessage()
 			gm.SetHeader("From", e.config.FromEmailAddress)
 			gm.SetHeader("To", address.Email)

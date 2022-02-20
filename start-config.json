@@ -1,0 +1,27 @@
+{
+  "email_config": {
+    "host": "",
+    "port": 0,
+    "username": "",
+    "password": "",
+    "from_email_address": ""
+  },
+  "email_receiver_config": {
+    "alert_subject": "",
+    "resolve_subject": "",
+    "receivers": [
+      {
+        "name": "",
+        "alert_template_message": "",
+        "resolve_template_message": "",
+        "addresses": [
+          {
+            "email": "",
+            "name": "",
+            "surname": ""
+          }
+        ]
+      }
+    ]
+  }
+}
