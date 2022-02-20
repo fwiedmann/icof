@@ -39,6 +39,6 @@ func main() {
 	panic(icof.Run(context.Background(), icof.Config{
 		Observer:   pinAlert,
 		Notifiers:  []icof.Notifier{emailNotifier},
-		Repository: nil,
+		Repository: gocrazy_permanent_data.NewStateRepository(),
 	}))
 }
