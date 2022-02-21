@@ -3,7 +3,9 @@ package gocrazy_permanent_data
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/fwiedmann/icof"
+	"io/fs"
 	"io/ioutil"
 	"sync"
 )
@@ -45,6 +47,9 @@ func (s *State) GetLatest(ctx context.Context) (icof.ObserverState, error) {
 	defer s.mtx.Unlock()
 
 	content, err := ioutil.ReadFile(StateLocation)
+	if err != nil && errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}

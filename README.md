@@ -33,7 +33,7 @@ Now you can follow the go-krazy installation guide: https://github.com/gokrazy/g
 
 You can update your gokrazy installation via the web endpoint:
 ```bash
-gokr-packer -update yes -hostname <IP OF YOUR INSTANCE> -serial_console=disabled .
+gokr-packer -update yes -hostname 192.168.178.49 -serial_console=disabled ./cmd/icof-cmd
 ```
 
 ### Configuration
