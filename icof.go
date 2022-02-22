@@ -2,9 +2,17 @@ package icof
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 )
 
 type ObserverState bool
+
+func (o ObserverState) String() string {
+	if o {
+		return "alert"
+	}
+	return "resolved"
+}
 
 const (
 	Alert    ObserverState = true
@@ -19,6 +27,7 @@ type Observer interface {
 type Notifier interface {
 	Alert(ctx context.Context) error
 	Resolve(ctx context.Context) error
+	Name() string
 }
 
 type StateRepository interface {
@@ -30,6 +39,7 @@ type Config struct {
 	Observer   Observer
 	Notifiers  []Notifier
 	Repository StateRepository
+	Logger     *log.Logger
 }
 
 // Run will handle all incoming alerts.
@@ -40,6 +50,8 @@ func Run(ctx context.Context, c Config) error {
 		panic(err)
 	}
 
+	c.Logger.Infof("latest stored state from disk %q", lastState)
+
 	alertChan := make(chan ObserverState)
 	go c.Observer.Observe(ctx, alertChan)
 	for {
@@ -48,6 +60,7 @@ func Run(ctx context.Context, c Config) error {
 			return nil
 		case observedSate := <-alertChan:
 			if !shouldSendNotification(observedSate, lastState) {
+				c.Logger.Infof("last stored state was alert, no new notification will be sent until state changes to resolved ")
 				break
 			}
 			// reset after the first resolved alert is sent
@@ -74,12 +87,12 @@ func handleAlert(ctx context.Context, c Config, alert ObserverState) error {
 	for _, notifier := range c.Notifiers {
 		if alert == Alert {
 			if err := notifier.Alert(ctx); err != nil {
-				return err
+				log.Errorf("could not send alert notifications with notifier %q: %q", notifier.Name(), err)
 			}
 			continue
 		}
 		if err := notifier.Resolve(ctx); err != nil {
-			return err
+			log.Errorf("could not send resolve notifications with notifier %q: %q", notifier.Name(), err)
 		}
 	}
 	return nil

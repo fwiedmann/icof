@@ -1,11 +1,13 @@
 package notifier_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"github.com/fwiedmann/icof/pkg/notifier"
 	mock_email "github.com/fwiedmann/icof/pkg/notifier/mock-email"
 	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 	"testing"
 )
 
@@ -92,12 +94,16 @@ func TestEmailClient_Alert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			logger := logrus.New()
+			buf := bytes.Buffer{}
+			logger.SetOutput(&buf)
 			mockCtrl := gomock.NewController(t)
 			repoMock := mock_email.NewMockEmailReceiverRepository(mockCtrl)
 
 			repoMock.EXPECT().GetReceivers(gomock.Any()).Return(tt.repoResponse.receivers, tt.repoResponse.err)
 			tt.inputClient.config.Sender = mock_email.NewMockEmailSender(t, tt.mockWantMessageCount, tt.mockError)
-			c, err := notifier.NewEmailClient(&tt.inputClient.config, repoMock)
+			c, err := notifier.NewEmailClient(&tt.inputClient.config, repoMock, logger)
 			if err != nil {
 				t.Fatalf("NewEmailClient() retuned an error but did not want one: %s", err)
 			}
@@ -196,13 +202,16 @@ func TestEmailClient_Resolve(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			logger := logrus.New()
 
+			buf := bytes.Buffer{}
+			logger.SetOutput(&buf)
 			mockCtrl := gomock.NewController(t)
 			repoMock := mock_email.NewMockEmailReceiverRepository(mockCtrl)
 
 			repoMock.EXPECT().GetReceivers(gomock.Any()).Return(tt.repoResponse.receivers, tt.repoResponse.err)
 			tt.inputClient.config.Sender = mock_email.NewMockEmailSender(t, tt.mockWantMessageCount, tt.mockError)
-			c, err := notifier.NewEmailClient(&tt.inputClient.config, repoMock)
+			c, err := notifier.NewEmailClient(&tt.inputClient.config, repoMock, logger)
 			if (err != nil) && !tt.wantError {
 				t.Fatalf("NewEmailClient() retuned an error but did not want one: %s", err)
 			}

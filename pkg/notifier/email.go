@@ -4,12 +4,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 	"html/template"
 	"strings"
 )
 
 type notifierKind int
+
+func (n notifierKind) String() string {
+	return []string{"alert", "resolve"}[n]
+}
 
 const (
 	alert notifierKind = iota
@@ -45,7 +50,7 @@ type EmailClientConfig struct {
 }
 
 // NewEmailClient inits an EmailClient which can send e-mails for alert and resolve notifications
-func NewEmailClient(config *EmailClientConfig, repo EmailReceiverRepository) (*EmailClient, error) {
+func NewEmailClient(config *EmailClientConfig, repo EmailReceiverRepository, logger *log.Logger) (*EmailClient, error) {
 	err := validator.New().Struct(config)
 	if err != nil {
 		return nil, err
@@ -54,6 +59,7 @@ func NewEmailClient(config *EmailClientConfig, repo EmailReceiverRepository) (*E
 	return &EmailClient{
 		config: config,
 		repo:   repo,
+		logger: logger.WithFields(map[string]interface{}{"notifier": "email"}),
 	}, nil
 }
 
@@ -65,29 +71,39 @@ type EmailReceiverRepository interface {
 type EmailClient struct {
 	config *EmailClientConfig
 	repo   EmailReceiverRepository
+	logger *log.Entry
+}
+
+// Name gives the name of the email notifier
+func (e *EmailClient) Name() string {
+	return "email-notifier"
 }
 
 // Alert sends notification to the given receiver audience.
 // Email Subject will contain the noun "alert" as prefix.
 func (e *EmailClient) Alert(ctx context.Context) error {
+	e.logger.Infof("starting to send alert for email receivers")
 	if err := e.sendEmailToReceivers(ctx, alert); err != nil {
 		return AlertError{
 			err:      err,
 			notifier: EmailNotifier,
 		}
 	}
+	e.logger.Infof("successfully send alert emails for receivers")
 	return nil
 }
 
 // Resolve sends notification to the given receiver audience.
 // Email Subject will contain the adjective "resolved" as prefix.
 func (e *EmailClient) Resolve(ctx context.Context) error {
+	e.logger.Infof("starting to send resolve for email receivers")
 	if err := e.sendEmailToReceivers(ctx, resolve); err != nil {
 		return ResolveError{
 			err:      err,
 			notifier: EmailNotifier,
 		}
 	}
+	e.logger.Infof("successfully send resolve emails for receivers")
 	return nil
 }
 
@@ -114,6 +130,9 @@ func (e *EmailClient) sendEmailToReceivers(ctx context.Context, kind notifierKin
 			}
 			if messageBuildErr != nil {
 				return messageBuildErr
+			}
+			if err == nil {
+				e.logger.Infof("successfully send all emails for notification kind %q", kind)
 			}
 			return err
 		case <-ctx.Done():
@@ -155,13 +174,15 @@ func (e *EmailClient) buildMessages(kind notifierKind) ([]*gomail.Message, error
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf("could not create messages for notifier kind %d", kind)
+			return nil, fmt.Errorf("could not create messages for notifier kind %q", kind)
 		}
 
 		for _, address := range receiver.Addresses {
 			buf := &strings.Builder{}
 			err := tmpl.Execute(buf, address)
 			if err != nil || buf.Len() == 0 {
+				e.logger.Errorf("could not create template for notification kind %q and address %+v", kind, address)
+
 				failedAddressTemplates = append(failedAddressTemplates, failedMessageBuild{
 					address:      address.Email,
 					receiverName: receiver.Name,
