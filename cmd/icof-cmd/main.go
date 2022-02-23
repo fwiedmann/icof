@@ -40,6 +40,10 @@ func main() {
 		logger,
 	)
 
+	if err != nil {
+		panic(err)
+	}
+
 	panic(icof.Run(context.Background(), icof.Config{
 		Observer:   pinAlert,
 		Notifiers:  []icof.Notifier{emailNotifier},

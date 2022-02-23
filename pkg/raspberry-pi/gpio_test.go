@@ -2,6 +2,7 @@ package raspberry_pi
 
 import (
 	"context"
+	"github.com/fwiedmann/icof"
 	"testing"
 	"time"
 
@@ -63,16 +64,19 @@ func TestObserve(t *testing.T) {
 				previousReadWasAnAlert: tableTest.given.alertState,
 			}
 
-			alertChan := make(chan bool)
+			alertChan := make(chan icof.ObserverState)
 
-			ctx, _ := context.WithTimeout(context.Background(), time.Second*1)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+			t.Cleanup(func() {
+				cancel()
+			})
 			go pin.Observe(ctx, alertChan)
 
 			select {
 			case <-ctx.Done():
 				t.Fatal("Observe() did not send any signal through the channel")
 			case alert := <-alertChan:
-				if alert != tableTest.want.alertState {
+				if alert != icof.ObserverState(tableTest.want.alertState) {
 					t.Fatalf("Observe send %t alert state, but want %t", alert, tableTest.want.alertState)
 				}
 				if pin.alertCount != tableTest.want.alertCount {

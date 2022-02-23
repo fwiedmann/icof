@@ -187,6 +187,7 @@ func (e *EmailClient) buildMessages(kind notifierKind) ([]*gomail.Message, error
 					address:      address.Email,
 					receiverName: receiver.Name,
 					templateName: tmpl.Name(),
+					errorMessage: err.Error(),
 				})
 			}
 			gm := gomail.NewMessage()
