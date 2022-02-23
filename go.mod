@@ -14,10 +14,6 @@ require (
 require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
-	github.com/gokrazy/firmware v0.0.0-20220206091305-ab5ac7f26e26 // indirect
-	github.com/gokrazy/gokrazy v0.0.0-20220222081701-402a8c60a31e // indirect
-	github.com/gokrazy/kernel v0.0.0-20220217040208-06a563e452e9 // indirect
-	github.com/gokrazy/rpi-eeprom v0.0.0-20220210033409-65a934c9dc5a // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect

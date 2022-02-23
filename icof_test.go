@@ -1,10 +1,12 @@
 package icof_test
 
 import (
+	"bytes"
 	"context"
 	"github.com/fwiedmann/icof"
 	mock_icof "github.com/fwiedmann/icof/mock"
 	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 	"testing"
 	"time"
 )
@@ -19,6 +21,11 @@ func (o ObserverMock) Observe(ctx context.Context, states chan<- icof.ObserverSt
 
 func TestRun_Should_Send_No_Alert_Due_To_Stored_State(t *testing.T) {
 	t.Parallel()
+
+	logger := logrus.New()
+	buf := bytes.Buffer{}
+	logger.SetOutput(&buf)
+
 	ctrl := gomock.NewController(t)
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -39,6 +46,7 @@ func TestRun_Should_Send_No_Alert_Due_To_Stored_State(t *testing.T) {
 		Observer:   ObserverMock{stateToSend: icof.Alert},
 		Notifiers:  []icof.Notifier{notifierMock},
 		Repository: repoMock,
+		Logger:     logger,
 	})
 	if err != nil {
 		t.Fatalf("Run() error: %s", err)
@@ -47,6 +55,11 @@ func TestRun_Should_Send_No_Alert_Due_To_Stored_State(t *testing.T) {
 
 func TestRun_Should_Send_Alert_Due_To_Stored_State(t *testing.T) {
 	t.Parallel()
+
+	logger := logrus.New()
+	buf := bytes.Buffer{}
+	logger.SetOutput(&buf)
+
 	ctrl := gomock.NewController(t)
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -67,6 +80,7 @@ func TestRun_Should_Send_Alert_Due_To_Stored_State(t *testing.T) {
 		Observer:   ObserverMock{stateToSend: icof.Alert},
 		Notifiers:  []icof.Notifier{notifierMock},
 		Repository: repoMock,
+		Logger:     logger,
 	})
 	if err != nil {
 		t.Fatalf("Run() error: %s", err)
@@ -75,6 +89,10 @@ func TestRun_Should_Send_Alert_Due_To_Stored_State(t *testing.T) {
 
 func TestRun_Should_Send_Resolved(t *testing.T) {
 	t.Parallel()
+	logger := logrus.New()
+	buf := bytes.Buffer{}
+	logger.SetOutput(&buf)
+
 	ctrl := gomock.NewController(t)
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -95,6 +113,7 @@ func TestRun_Should_Send_Resolved(t *testing.T) {
 		Observer:   ObserverMock{stateToSend: icof.Resolved},
 		Notifiers:  []icof.Notifier{notifierMock},
 		Repository: repoMock,
+		Logger:     logger,
 	})
 	if err != nil {
 		t.Fatalf("Run() error: %s", err)
