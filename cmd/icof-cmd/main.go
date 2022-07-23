@@ -6,10 +6,14 @@ import (
 	"github.com/fwiedmann/icof/pkg/gocrazy-permanent-data"
 	"github.com/fwiedmann/icof/pkg/notifier"
 	pi "github.com/fwiedmann/icof/pkg/raspberry-pi"
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
+	"net/http"
 	"time"
 )
+
+const httpServerPort = ":8080"
 
 func main() {
 	pinAlert, err := pi.NewGpioPin(
@@ -28,21 +32,32 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	logger := setupLogger()
+
+	dynamicEmailConfig, err := gocrazy_permanent_data.NewDynamicEmailConfig(logger)
+	if err != nil {
+		panic(err)
+	}
 
 	emailNotifier, err := notifier.NewEmailClient(
 		&notifier.EmailClientConfig{
 			Sender:           gomail.NewDialer(c.EmailClientConfig.Host, c.EmailClientConfig.Port, c.EmailClientConfig.Username, c.EmailClientConfig.Password),
 			FromEmailAddress: c.EmailClientConfig.FromEmailAddress,
 		},
-		c,
+		dynamicEmailConfig,
 		logger,
 	)
 
 	if err != nil {
 		panic(err)
 	}
+
+	go func() {
+		router := mux.NewRouter()
+		router.HandleFunc("/email-config", dynamicEmailConfig.GetConfigHandler()).Methods(http.MethodGet)
+		router.HandleFunc("/email-config", dynamicEmailConfig.CreatOrUpdateConfig()).Methods(http.MethodPut)
+		panic(http.ListenAndServe(httpServerPort, router))
+	}()
 
 	panic(icof.Run(context.Background(), icof.Config{
 		Observer:   pinAlert,

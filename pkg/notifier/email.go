@@ -23,19 +23,19 @@ const (
 
 // EmailReceiver struct
 type EmailReceiver struct {
-	Name                   string    `validate:"required"`
-	AlertSubject           string    `validate:"required"`
-	ResolveSubject         string    `validate:"required"`
-	AlertTemplateMessage   string    `validate:"required"`
-	ResolveTemplateMessage string    `validate:"required"`
-	Addresses              []Address `validate:"required,dive,required"`
+	Name                   string    `json:"name" validate:"required"`
+	AlertSubject           string    `json:"alert_subject" validate:"required"`
+	ResolveSubject         string    `json:"resolve_subject" validate:"required"`
+	AlertTemplateMessage   string    `json:"alert_template_message" validate:"required"`
+	ResolveTemplateMessage string    `json:"resolve_template_message" validate:"required"`
+	Addresses              []Address `json:"addresses" validate:"required,dive,required"`
 }
 
 // Address struct will be used to send the notification to the given Address.Email and also as the input for the message template
 type Address struct {
-	Email   string `validate:"required"`
-	Name    string `validate:"required"`
-	Surname string `validate:"required"`
+	Email   string `json:"email" validate:"required"`
+	Name    string `json:"name" validate:"required"`
+	Surname string `json:"surname" validate:"required"`
 }
 
 // EmailSender interface

@@ -49,26 +49,42 @@ Configuration:
     "username": "",
     "password": "",
     "from_email_address": ""
-  },
-  "email_receiver_config": {
-    "alert_subject": "",
-    "resolve_subject": "",
-    "receivers": [
+  }
+}
+```
+
+In order to configure your e-mail alert receiver you have to send the following to the dynamic e-mail config endpoint
+
+Example data: 
+
+```json
+[
+  {
+    "name": "Family",
+    "alert_subject": "ALERT",
+    "resolve_subject": "✅ Resolve",
+    "alert_template_message": "Hi {{ .Name }},\n ... ",
+    "resolve_template_message": "Hi {{ .Name }},\n ... ",
+    "addresses": [
       {
-        "name": "",
-        "alert_template_message": "",
-        "resolve_template_message": "",
-        "addresses": [
-          {
-            "email": "",
-            "name": "",
-            "surname": ""
-          }
-        ]
+        "email": "felix@example.com",
+        "name": "Felix",
+        "surname": "Wiedmann"
       }
     ]
   }
-}
+]
+```
+
+Create or Update the current config:
+
+```bash
+curl -X PUT <IP of your gocrazy host>:8080/email-config -d @config.json
+```
+
+Get current config:
+```bash
+curl -X GET <IP of your gocrazy host>:8080/email-config
 ```
 
 ## Circuit 
